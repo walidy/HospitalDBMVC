@@ -3,6 +3,7 @@ package com.HospitalV2.HospitalV2.Controllers;
 import com.HospitalV2.HospitalV2.Repository.HRepository;
 import com.HospitalV2.HospitalV2.Response.PatientLastNameResponse;
 import com.HospitalV2.HospitalV2.Response.PatientsListResponse;
+import com.HospitalV2.HospitalV2.Response.getPatientsByCharacter;
 import com.HospitalV2.HospitalV2.Service.HospitalService;
 import com.HospitalV2.HospitalV2.models.Patients;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +64,16 @@ public class PatientController {
     @GetMapping("/patients/name/{firstName}")
     public Patients search(@PathVariable String firstName){
         return hrepository.findByFirstName(firstName);
+
+    }@GetMapping("/patients/name/response/{firstName}")
+
+    public ResponseEntity<Patients> tryout(@PathVariable String firstName){
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(hrepository.findByFirstName(firstName));
+    }
+
+    @GetMapping("/patients/getByCharacter/{ch}")
+    public ResponseEntity<getPatientsByCharacter> charSearch(@PathVariable String ch) {
+        return ResponseEntity.status(HttpStatus.IM_USED).body(hospitalService.getByCharacter(ch));
     }
 
     @PostMapping("/patients/create")
@@ -71,7 +82,7 @@ public class PatientController {
         String lastName = body.get("lastName");
         String ageString = body.get("age");
         int age = Integer.parseInt(ageString);
-        return (Patients) hrepository.save(new Patients(firstName, lastName, age));
+        return hrepository.save(new Patients(firstName, lastName, age));
     }
 
 
