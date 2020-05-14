@@ -16,5 +16,7 @@ public class getPatientsByCharacter {
         this.patients = patients;
     }
 
-
+    public List<Patients> getPatients() {
+        return patients;
+    }
 }

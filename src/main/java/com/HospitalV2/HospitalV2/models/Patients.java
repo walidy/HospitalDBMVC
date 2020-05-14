@@ -23,7 +23,6 @@ public class Patients {
         this.setAge(age);
     }
 
-
     public int getId() {
         return id;
     }

@@ -15,4 +15,6 @@ public interface HRepository extends JpaRepository<Patients, Integer> {
     List<Patients> findByAgeGreaterThan(Integer age);
 
     Patients findByFirstName(String firstName);
+
+
 }
