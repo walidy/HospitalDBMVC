@@ -1,25 +1,28 @@
 package com.HospitalV2.HospitalV2.Service;
 
-import com.HospitalV2.HospitalV2.Repository.HRepository;
+import com.HospitalV2.HospitalV2.Repository.PatientsRepository;
+import com.HospitalV2.HospitalV2.Response.PatientFirstNameOnlyResponse;
+import com.HospitalV2.HospitalV2.Response.PatientLastNameResponse;
 import com.HospitalV2.HospitalV2.Response.PatientsListResponse;
-import com.HospitalV2.HospitalV2.Response.getPatientsByCharacter;
-import com.HospitalV2.HospitalV2.models.Patients;
+import com.HospitalV2.HospitalV2.Response.GetPatientsByCharacterResponse;
+import com.HospitalV2.HospitalV2.Domain.Patients;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static java.lang.Integer.parseInt;
+
 @Service
 public class HospitalServiceImp implements HospitalService {
 
     @Autowired
-    HRepository repository;
+    PatientsRepository repository;
 
     public PatientsListResponse filterByAge(int age) {
         List<Patients> patientsFromDb = repository.findAll();
@@ -29,6 +32,8 @@ public class HospitalServiceImp implements HospitalService {
         return new PatientsListResponse(filteredList);
     }
 
+
+
     public PatientsListResponse filterByAge2(int age, int age2) {
         List<Patients> patientsFromDb = repository.findAll();
 
@@ -37,28 +42,76 @@ public class HospitalServiceImp implements HospitalService {
         return new PatientsListResponse(filteredList);
     }
 
-    public getPatientsByCharacter getByCharacter(String ch){
-        List<Patients> patientsFromDb2 = repository.findAll();
+    public ResponseEntity<Patients> getPatientById(Integer id){
+        Patients patientToReturn;
+        HttpStatus httpStatus = HttpStatus.IM_USED;
+        Optional<Patients> patientFromDb = repository.findById(id);
 
-        List<Patients> filteredList2 = patientsFromDb2.stream().filter(patients -> patients.getFirstName().startsWith(ch)).collect(Collectors.toList());
+        if (patientFromDb.isPresent()) {
+            patientToReturn = patientFromDb.get();
+        } else {
+            patientToReturn = null;
+            httpStatus = HttpStatus.NOT_FOUND;
+        }
 
-        return new getPatientsByCharacter(filteredList2);
-
-       // (getByCharacter())).findFirst().orElse(null);
+        return ResponseEntity.status(httpStatus).body(patientToReturn);
     }
 
-    public Patients savePatient(Map<String, String> body) {
-        String firstName = body.get("firstName");
-        String lastName = body.get("lastName");
-        String ageString = body.get("age");
-        int age = Integer.parseInt(ageString);
-        return repository.save(new Patients(firstName, lastName, age));
+    public ResponseEntity<PatientsListResponse> getAgeGreaterThan(Integer age){
+        HttpStatus httpStatus = HttpStatus.I_AM_A_TEAPOT;
 
+        List<Patients> filteredPatients = filterByAge(age).getPatientsList();
+
+        if (filteredPatients.isEmpty()) { //getPatientList confusion
+            httpStatus = HttpStatus.NOT_FOUND;
+        }
+
+        return ResponseEntity.status(httpStatus)
+                .body(new PatientsListResponse(filteredPatients));
     }
 
-   /* public Patients updatePatient(Patients patientsRequest, Integer id){
+    public ResponseEntity<Patients> deletePatient(Integer id){
+        repository.deleteById(id);
+        return ResponseEntity.status(HttpStatus.IM_USED).body(null);
+    }
+
+
+
+
+    public ResponseEntity<Patients> savePatient(Map<String, String> body) {
+        Patients savedPatient = repository.save(new Patients(body.get("firstName"), body.get("lastName"), parseInt(body.get("age"))));
+
+        return ResponseEntity.status(HttpStatus.OK).body(savedPatient);
+    }
+
+    public ResponseEntity<PatientLastNameResponse> getPatientWithoutLastName(Integer id){
+        Optional<Patients> patientFromDb = repository.findById(id);
+        HttpStatus httpStatus = HttpStatus.IM_USED;
+        if (patientFromDb == null) {
+            httpStatus = HttpStatus.NOT_FOUND;
+        }
+
+        return ResponseEntity.status(httpStatus)
+                .body(new PatientLastNameResponse(patientFromDb.get()));
+    }
+
+    public ResponseEntity<PatientsListResponse> getPatientsBetweenAge(Integer age, Integer age2){
+
+        HttpStatus httpStatus = HttpStatus.OK;
+
+        PatientsListResponse patientsListResponse = filterByAge2(age, age2);
+
+        if (patientsListResponse.getPatientsList().isEmpty()) {
+            httpStatus = HttpStatus.NOT_FOUND;
+        }
+
+        return ResponseEntity.status(httpStatus)
+                .body(patientsListResponse);
+    }
+
+    public ResponseEntity<Patients> updatePatient(Patients patientsRequest, Integer id) {
         Optional<Patients> patientsO = repository.findById(id);
-        if (!patientsO.isPresent()){
+        if (!patientsO.isPresent()) {
             return ResponseEntity.notFound().build();
         } else {
             Patients patientToUpdate = patientsO.get();
@@ -67,9 +120,42 @@ public class HospitalServiceImp implements HospitalService {
             patientToUpdate.setFirstName(patientsRequest.getFirstName());
             patientToUpdate.setLastName((patientsRequest.getLastName()));
 
-           return repository.save(patientsO.get());
+            repository.save(patientsO.get());
         }
-    }*/
+        return ResponseEntity.noContent().build();
+    }
 
+    public ResponseEntity<GetPatientsByCharacterResponse> getByCharacter(String ch) {
+        List<Patients> patientsFromDb2 = repository.findAll();
+
+        List<Patients> filteredList2 = patientsFromDb2.stream().filter(patients -> patients.getFirstName().startsWith(ch)).collect(Collectors.toList());
+
+        HttpStatus httpStatus = HttpStatus.IM_USED;
+
+        if (filteredList2.isEmpty()) {
+            httpStatus = HttpStatus.NOT_FOUND;
+        }
+
+        return ResponseEntity.status(httpStatus).body(new GetPatientsByCharacterResponse(filteredList2));
+
+
+    }
+
+    public ResponseEntity<PatientFirstNameOnlyResponse> getByFirstNameOnly(String firstName){
+        HttpStatus httpStatus = HttpStatus.IM_USED;
+
+        Patients firstNamePatient = repository.findByFirstName(firstName);
+
+        if(firstNamePatient == null){
+            httpStatus = HttpStatus.NOT_FOUND;
+        }
+
+        return ResponseEntity.status(httpStatus).body(new PatientFirstNameOnlyResponse(firstNamePatient));
+    }
 
 }
+
+
+
+
+

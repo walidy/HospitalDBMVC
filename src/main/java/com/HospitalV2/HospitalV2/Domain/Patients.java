@@ -1,4 +1,4 @@
-package com.HospitalV2.HospitalV2.models;
+package com.HospitalV2.HospitalV2.Domain;
 
 import lombok.NoArgsConstructor;
 
